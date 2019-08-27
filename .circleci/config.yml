@@ -76,25 +76,25 @@ jobs:
     steps:
       - checkout
 
+      - attach_workspace:
+          at: .
+
       - run:
           name: Run rails tests
           command: bundle exec rails test
-
-      - attach_workspace:
-          at: .
   
   test_js:
     <<: *job
     steps:
       - checkout
 
+      - attach_workspace:
+          at: .
+
       - run:
           name: Run JS tests
           # TODO
           command: yarn --version
-
-      - attach_workspace:
-          at: .
 
 workflows:
   version: 2
