@@ -8,6 +8,8 @@ base_job: &job
         YARN_VERSION: 1.17.0
         BUNDLER_VERSION: 2.0.2
         BUNDLE_PATH: vendor/bundle
+        GEM_HOME: .gem
+        GEM_PATH: .gem
         RAILS_ENV: test
 
 jobs:
@@ -44,6 +46,7 @@ jobs:
           root: .
           paths:
             - vendor/bundle
+            - .gem
   
   # Install JS dependencies
   build_js:
