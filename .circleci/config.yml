@@ -6,7 +6,8 @@ base_job: &job
       environment:
         NODE_VERSION: 1.10.6
         YARN_VERSION: 1.17.0
-        BUNLDER_VERSION: 2.0.2
+        BUNDLER_VERSION: 2.0.2
+        BUNDLE_PATH: vendor/bundle
         RAILS_ENV: test
 
 jobs:
@@ -16,8 +17,16 @@ jobs:
       - checkout
 
       - run:
+          name: Install bundler
+          command: gem install bundler -v $BUNDLER_VERSION
+
+      - run:
           name: Install ruby dependencies
           command: bundle install
+      
+      - run:
+          name: Check rails works
+          command: bundle exec rails --version
   
   build_js:
     <<: *job
