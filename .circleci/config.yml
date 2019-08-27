@@ -35,9 +35,9 @@ jobs:
           command: bundle exec rails --version
       
       - save_cache:
-        key: Gemfile-{{ .Branch }}-{{ checksum "Gemfile.lock" }}
-        paths:
-          - vendor/bundle
+          key: Gemfile-{{ .Branch }}-{{ checksum "Gemfile.lock" }}
+          paths:
+            - vendor/bundle
   
   build_js:
     <<: *job
