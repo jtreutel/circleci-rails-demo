@@ -1,17 +1,20 @@
 version: 2
 
+app_env: &app_env
+  environment:
+    NODE_VERSION: 1.10.6
+    YARN_VERSION: 1.17.0
+    BUNDLER_VERSION: 2.0.2
+    BUNDLE_PATH: vendor/bundle
+    GEM_HOME: .gem
+    GEM_PATH: .gem
+    RAILS_ENV: test
+    DATABASE_URL: 127.0.0.1
+
 base_job: &job
   docker:
     - image: circleci/ruby:2.5-node
-      environment:
-        NODE_VERSION: 1.10.6
-        YARN_VERSION: 1.17.0
-        BUNDLER_VERSION: 2.0.2
-        BUNDLE_PATH: vendor/bundle
-        GEM_HOME: .gem
-        GEM_PATH: .gem
-        RAILS_ENV: test
-        DATABASE_URL: 127.0.0.1
+      <<: *app_env
 
 jobs:
   # Install ruby dependencies
@@ -76,7 +79,10 @@ jobs:
             - node_modules
   
   test_rails:
-    <<: *job
+    docker:
+      - image: circleci/ruby:2.5-node
+        <<: *app_env
+      - image: circleci/postgres:11-alpine
     steps:
       - checkout
 
@@ -84,8 +90,19 @@ jobs:
           at: .
 
       - run:
+          name: Wait for db
+          command: |
+            dockerize -wait tcp://localhost:5432 -timeout 1m
+
+      - run:
+          name: Setup database
+          command: bundle exec rails db:migrate
+
+      - run:
           name: Run rails tests
           command: bundle exec rails test
+
+      # TODO save test artifacts
   
   test_js:
     <<: *job
