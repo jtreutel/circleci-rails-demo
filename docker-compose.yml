@@ -25,6 +25,8 @@ services:
       # Tell bundler to use the dir we're using as part of the
       # volume defined above
       BUNDLE_PATH: /bundle
+    env_file:
+     - .env
     depends_on:
       - postgres
       - redis
