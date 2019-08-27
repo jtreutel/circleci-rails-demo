@@ -83,6 +83,10 @@ jobs:
       - image: circleci/ruby:2.5-node
         <<: *app_env
       - image: circleci/postgres:11-alpine
+        environment:
+          POSTGRES_DB: rails_db
+          POSTGRES_USER: rails_db_user
+          POSTGRES_PASSWORD: rails_db_pw
     steps:
       - checkout
 
