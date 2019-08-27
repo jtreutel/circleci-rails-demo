@@ -1,0 +1,15 @@
+FROM circleci/ruby:2.5-node
+
+ARG NODE_ENV
+ENV NODE_ENV $NODE_ENV
+
+ARG YARN_ENV
+ENV YARN_ENV $YARN_ENV
+
+ARG BUNDLER_VERSION
+ENV BUNDLER_VERSION $BUNDLER_VERSION
+
+RUN sudo useradd -m app
+WORKDIR /home/app
+
+RUN gem install bundler -v $BUNDLER_VERSION

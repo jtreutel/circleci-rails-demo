@@ -1,0 +1,50 @@
+version: "3"
+
+services:
+  rails:
+    build:
+      context: .
+      args:
+        # If you want alternative versions of node / yarn / bundler, define these here.
+        #
+        # Note you'll also need to change these in .circelci/config to ensure the 
+        # CI environment uses the same versions.
+        #
+        # TODO: Have all these retrieved from .lock files etc?
+       - NODE_VERSION=1.10.6
+       - YARN_VERSION=1.17.0
+       - BUNDLER_VERSION=2.0.2
+    command: bundle exec rails s -b 0.0.0.0 -p 5000
+    ports:
+      - "5000:5000"
+    volumes:
+      - .:/home/app
+      # This volume is used to persist gems between builds
+      - bundle:/bundle
+    environment:
+      # Tell bundler to use the dir we're using as part of the
+      # volume defined above
+      BUNDLE_PATH: /bundle
+    depends_on:
+      - postgres
+      - redis
+  
+  postgres:
+    image: circleci/postgres:11-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: rails_db
+      POSTGRES_USER: rails_db_user
+      POSTGRES_PASSWORD: rails_db_pw
+    volumes:
+     - pg-data:/var/lib/postgresql/data
+  
+  redis:
+    image: circleci/redis:alpine
+    ports:
+     - "6379:6379"
+
+volumes:
+  pg-data:
+  bundle:
