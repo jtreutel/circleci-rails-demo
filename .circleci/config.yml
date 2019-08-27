@@ -20,6 +20,12 @@ jobs:
           name: Install bundler
           command: gem install bundler -v $BUNDLER_VERSION
 
+      - restore_cache:
+          keys:
+            - Gemfile-{{ .Branch }}-{{ checksum "Gemfile.lock" }}
+            - Gemfile-{{ .Branch }}
+            - Gemfile-
+
       - run:
           name: Install ruby dependencies
           command: bundle install
@@ -27,6 +33,11 @@ jobs:
       - run:
           name: Check rails works
           command: bundle exec rails --version
+      
+      - save_cache:
+        key: Gemfile-{{ .Branch }}-{{ checksum "Gemfile.lock" }}
+        paths:
+          - vendor/bundle
   
   build_js:
     <<: *job
