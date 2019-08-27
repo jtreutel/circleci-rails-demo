@@ -87,6 +87,7 @@ jobs:
           POSTGRES_DB: rails_db
           POSTGRES_USER: rails_db_user
           POSTGRES_PASSWORD: rails_db_pw
+
     steps:
       - checkout
 
@@ -100,7 +101,7 @@ jobs:
 
       - run:
           name: Setup database
-          command: bundle exec rails db:migrate
+          command: bundle exec rails db:schema:load
 
       - run:
           name: Run rails tests
