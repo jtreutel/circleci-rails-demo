@@ -11,6 +11,7 @@ base_job: &job
         RAILS_ENV: test
 
 jobs:
+  # Install ruby dependencies
   build_ruby:
     <<: *job
     steps:
@@ -38,7 +39,13 @@ jobs:
           key: Gemfile-{{ .Branch }}-{{ checksum "Gemfile.lock" }}
           paths:
             - vendor/bundle
+      
+      - persist_to_workspace:
+          root: .
+          paths:
+            - vendor/bundle
   
+  # Install JS dependencies
   build_js:
     <<: *job
     steps:
@@ -58,6 +65,36 @@ jobs:
           key: npm-{{ .Branch }}-{{ checksum "yarn.lock" }}
           paths:
             - node_modules
+      
+      - persist_to_workspace:
+          root: .
+          paths:
+            - node_modules
+  
+  test_rails:
+    <<: *job
+    steps:
+      - checkout
+
+      - run:
+          name: Run rails tests
+          comand: bundle exec rails test
+
+      - attach_workspace:
+          at: .
+  
+  test_js:
+    <<: *job
+    steps:
+      - checkout
+
+      - run:
+          name: Run JS tests
+          # TODO
+          command: yarn --version
+
+      - attach_workspace:
+          at: .
 
 workflows:
   version: 2
@@ -65,3 +102,10 @@ workflows:
     jobs:
       - build_ruby
       - build_js
+      - test_js:
+          requires:
+           - build_js
+      - test_rails:
+          requires:
+           - build_ruby
+           - build_js
