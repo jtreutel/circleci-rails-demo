@@ -78,7 +78,7 @@ jobs:
 
       - run:
           name: Run rails tests
-          comand: bundle exec rails test
+          command: bundle exec rails test
 
       - attach_workspace:
           at: .
