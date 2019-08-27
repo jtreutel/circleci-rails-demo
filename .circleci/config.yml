@@ -17,6 +17,11 @@ base_job: &job
       <<: *app_env
 
 jobs:
+
+  #
+  # Build jobs
+  #
+
   # Install ruby dependencies
   build_ruby:
     <<: *job
@@ -78,6 +83,10 @@ jobs:
           paths:
             - node_modules
   
+  #
+  # Test jobs
+  #
+  
   test_rails:
     docker:
       - image: circleci/ruby:2.5-node
@@ -121,6 +130,30 @@ jobs:
           name: Run JS tests
           # TODO
           command: yarn --version
+  
+  #
+  # Deploy Jobs
+  #
+
+  # 
+  deploy_database_migrations:
+    <<: *job
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+  
+  deploy_terraform:
+    <<: *job
+    steps:
+      - checkout
+  
+  deploy_heroku:
+    <<: *job
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
 
 workflows:
   version: 2
@@ -135,3 +168,22 @@ workflows:
           requires:
            - build_ruby
            - build_js
+      - hold_for_deploy:
+          type: approval
+          requires:
+            - test_rails
+            - test_js
+          filters:
+            branches:
+              only:
+                - master
+                - staging
+      - deploy_database_migrations:
+          requires:
+           - hold_for_deploy
+      - deploy_terraform:
+          requires:
+            - deploy_database_migrations
+      - deploy_heroku:
+          requires:
+            - deploy_terraform
