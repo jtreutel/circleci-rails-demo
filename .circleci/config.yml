@@ -9,7 +9,7 @@ app_env: &app_env
     GEM_HOME: .gem
     GEM_PATH: .gem
     RAILS_ENV: test
-    DATABASE_URL: 127.0.0.1
+    DATABASE_HOST: 127.0.0.1
 
 base_job: &job
   docker:
