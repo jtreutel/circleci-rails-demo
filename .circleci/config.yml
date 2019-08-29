@@ -151,7 +151,7 @@ jobs:
     steps:
       - checkout
       - run: cd terraform
-      - run: apt-get install terraform
+      - run: sudo apt-get install terraform
       - run: terraform init
       - run: terraform apply
 
