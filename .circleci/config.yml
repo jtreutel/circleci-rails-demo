@@ -152,9 +152,10 @@ jobs:
     <<: *app_env
     steps:
       - checkout
-      - run: cd terraform
-      - run: terraform init
-      - run: terraform apply
+      - run: |
+        cd terraform
+        terraform init
+        terraform apply
 
 workflows:
   version: 2
