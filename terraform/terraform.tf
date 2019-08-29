@@ -22,5 +22,5 @@ resource "heroku_app" "rails_app" {
 
 resource "heroku_addon" "rails_database" {
     app  = "${heroku_app.rails_app.name}"
-    plan = "heroku-postgresql:hobby-basic"
+    plan = "heroku-postgresql:hobby-dev"
 }
