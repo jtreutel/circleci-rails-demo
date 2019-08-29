@@ -147,11 +147,12 @@ jobs:
       - run: bundle exec rails db:migrate RAILS_ENV=production
   
   deploy_terraform:
-    <<: *job
+    docker:
+      - image: hashicorp/terraform:latest
+    <<: *app_env
     steps:
       - checkout
       - run: cd terraform
-      - run: sudo apt-get install terraform
       - run: terraform init
       - run: terraform apply
 
