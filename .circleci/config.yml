@@ -137,14 +137,14 @@ jobs:
   #
   # Deploy Jobs
   #
-  
+
   deploy_database_migrations:
     <<: *job
     steps:
       - checkout
       - attach_workspace:
           at: .
-      - run: bundle exec rails db:create db:migrate RAILS_ENV=production
+      - run: bundle exec rails db:migrate RAILS_ENV=production
   
   deploy_terraform:
     <<: *job
