@@ -1,4 +1,7 @@
-version: 2
+version: 2.1
+
+orbs:
+  heroku: circleci/heroku@0.0.8
 
 app_env: &app_env
   environment:
@@ -134,26 +137,23 @@ jobs:
   #
   # Deploy Jobs
   #
-
-  # 
+  
   deploy_database_migrations:
     <<: *job
     steps:
       - checkout
       - attach_workspace:
           at: .
+      - run: bundle exec rails db:create db:migrate RAILS_ENV=production
   
   deploy_terraform:
     <<: *job
     steps:
       - checkout
-  
-  deploy_heroku:
-    <<: *job
-    steps:
-      - checkout
-      - attach_workspace:
-          at: .
+      - run: cd terraform
+      - run: apt-get install terraform
+      - run: terraform init
+      - run: terraform apply
 
 workflows:
   version: 2
@@ -173,17 +173,16 @@ workflows:
           requires:
             - test_rails
             - test_js
-          filters:
-            branches:
-              only:
-                - master
-                - staging
       - deploy_database_migrations:
           requires:
            - hold_for_deploy
+          context: circleci-rails-prod
       - deploy_terraform:
           requires:
             - deploy_database_migrations
-      - deploy_heroku:
+          context: circleci-rails-prod
+      - heroku/deploy-via-git:
           requires:
             - deploy_terraform
+          context: circleci-rails-prod
+  
