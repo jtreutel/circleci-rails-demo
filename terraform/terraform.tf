@@ -1,3 +1,11 @@
+terraform {
+    backend "s3" {
+        bucket = "aaron-misc"
+        key    = "terraform/rails-circle-demo/"
+        region = "eu-west-2"
+    }
+}
+
 provider "heroku" {
     version = "~> 2.1"
 }
