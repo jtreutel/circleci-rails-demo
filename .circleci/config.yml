@@ -13,7 +13,7 @@ app_env: &app_env
     GEM_PATH: .gem
     RAILS_ENV: test
     DATABASE_HOST: 127.0.0.1
-    TESTOPTS: "--ci-dir=.circle-test-reports/reports"
+    TESTOPTS: "--ci-dir=test/reports"
 
 base_job: &job
   docker:
@@ -121,10 +121,10 @@ jobs:
           command: bundle exec rails test
 
       - store_test_results:
-          path: .circle-test-reports/reports
+          path: test/reports
 
       - store_artifacts:
-          path: .circle-test-reports/reports
+          path: test/reports
   
   test_js:
     <<: *job
