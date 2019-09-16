@@ -25,6 +25,11 @@ rails() {
     docker-compose run --rm rails bundle exec rails "$@"
 }
 
+# Shortcut to `rake`
+rake() {
+    docker-compose run --rm rails bundle exec rake "$@"
+}
+
 # Shortcut to `docker-compose up` - only we ensure that there is no
 # file at `tmp/server.pid`. This prevents rails complaining that a server
 # is already running.
