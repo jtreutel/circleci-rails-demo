@@ -120,7 +120,11 @@ jobs:
           name: Run rails tests
           command: bundle exec rails test
 
-      # TODO save test artifacts
+      - store_test_results:
+          path: $CIRCLE_TEST_REPORTS/reports
+
+      - store_artifacts:
+          path: $CIRCLE_TEST_REPORTS/reports
   
   test_js:
     <<: *job
