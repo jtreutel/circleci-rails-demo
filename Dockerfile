@@ -1,4 +1,4 @@
-FROM circleci/ruby:2.5-node
+FROM circleci/ruby:2.5.6-node
 
 ARG NODE_ENV
 ENV NODE_ENV $NODE_ENV

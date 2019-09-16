@@ -40,7 +40,7 @@ up() {
 
 # Shorcut for `bundle`
 bundle() {
-    docker-compose run --rm bundle "$@"
+    docker-compose run --rm rails bundle "$@"
 }
 
 # Shortcut to access `node`
