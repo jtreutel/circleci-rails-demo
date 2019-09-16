@@ -13,6 +13,7 @@ app_env: &app_env
     GEM_PATH: .gem
     RAILS_ENV: test
     DATABASE_HOST: 127.0.0.1
+    TESTOPTS: "--ci-dir=$CIRCLE_TEST_REPORTS/reports"
 
 base_job: &job
   docker:
