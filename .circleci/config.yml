@@ -1,5 +1,13 @@
 version: 2.1
 
+parameters:
+  initiate_build:
+    type: boolean
+    default: true
+  run_experimental_workflow:
+    type: boolean
+    default: false
+
 orbs:
   heroku: circleci/heroku@0.0.8
 
@@ -169,6 +177,7 @@ jobs:
 workflows:
   version: 2
   build_and_test:
+    when: << pipeline.parameters.initiate_build >>
     jobs:
       - build_ruby
       - build_js
@@ -200,3 +209,14 @@ workflows:
             - deploy_terraform
           context: circleci-rails-prod
   
+  my_experimental_workflow:
+    when: << pipeline.parameters.run_experimental_workflow >>
+    jobs:
+      - build_ruby
+      - build_js
+      - test_js:
+          requires:
+            - build_js
+      - test_rails:
+          requires:
+            - build_ruby
