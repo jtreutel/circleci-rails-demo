@@ -184,6 +184,9 @@ workflows:
           requires:
             - test_rails
             - test_js
+          filters:
+            branches:
+              only: master
       - deploy_database_migrations:
           requires:
            - hold_for_deploy
