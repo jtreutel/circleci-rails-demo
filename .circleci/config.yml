@@ -15,10 +15,11 @@ app_env: &app_env
     DATABASE_HOST: 127.0.0.1
     TESTOPTS: "--ci-dir=test/reports"
 
-base_job: &job
-  docker:
-    - image: circleci/ruby:2.5.6-node
-      <<: *app_env
+executors:
+  ruby-node:
+    docker:
+      - image: circleci/ruby:2.5.6-node
+        <<: *app_env
 
 jobs:
 
@@ -28,7 +29,7 @@ jobs:
 
   # Install ruby dependencies
   build_ruby:
-    <<: *job
+    executor: ruby-node
     steps:
       - checkout
 
@@ -63,7 +64,7 @@ jobs:
   
   # Install JS dependencies
   build_js:
-    <<: *job
+    executor: ruby-node
     steps:
       - checkout
 
@@ -92,15 +93,13 @@ jobs:
   #
   
   test_rails:
+    executor: ruby-node
     docker:
-      - image: circleci/ruby:2.5.6-node
-        <<: *app_env
       - image: circleci/postgres:11-alpine
         environment:
           POSTGRES_DB: rails_db
           POSTGRES_USER: rails_db_user
           POSTGRES_PASSWORD: rails_db_pw
-
     steps:
       - checkout
 
@@ -127,7 +126,7 @@ jobs:
           path: test/reports
   
   test_js:
-    <<: *job
+    executor: ruby-node
     steps:
       - checkout
 
@@ -144,7 +143,7 @@ jobs:
   #
 
   deploy_database_migrations:
-    <<: *job
+    executor: ruby-node
     steps:
       - checkout
       - attach_workspace:
@@ -156,15 +155,18 @@ jobs:
       - image: hashicorp/terraform:latest
         environment:
           TF_IN_AUTOMATION: true
-
+    working_directory: terraform
     steps:
       - checkout
       - run:
-          name: Run Terraform
-          command: |
-            cd terraform
-            terraform init -input=false
-            terraform apply -input=false -auto-approve
+          name: Terraform init
+          command: terraform init -input=false
+      - run:
+          name: Terraform plan
+          command: terraform plan -input=false
+      - run:
+          name: Terraform apply
+          command: terraform apply -input=false -auto-approve
 
 workflows:
   version: 2
@@ -175,6 +177,7 @@ workflows:
       - test_js:
           requires:
            - build_js
+           - build_ruby
       - test_rails:
           requires:
            - build_ruby
