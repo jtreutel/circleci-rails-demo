@@ -20,6 +20,15 @@ executors:
     docker:
       - image: circleci/ruby:2.5.6-node
         <<: *app_env
+  ruby-node-postgres:
+    docker:
+      - image: circleci/ruby:2.5.6-node
+        <<: *app_env
+      - image: circleci/postgres:11-alpine
+        environment:
+          POSTGRES_DB: rails_db
+          POSTGRES_USER: rails_db_user
+          POSTGRES_PASSWORD: rails_db_pw
 
 jobs:
 
@@ -93,19 +102,13 @@ jobs:
   #
   
   test_rails:
-    executor: ruby-node
-    docker:
-      - image: circleci/postgres:11-alpine
-        environment:
-          POSTGRES_DB: rails_db
-          POSTGRES_USER: rails_db_user
-          POSTGRES_PASSWORD: rails_db_pw
+    executor: ruby-node-postgres
     steps:
       - checkout
 
       - attach_workspace:
           at: .
-
+      
       - run:
           name: Wait for db
           command: |
@@ -175,9 +178,9 @@ workflows:
       - build_ruby
       - build_js
       - test_js:
-          requires:
-           - build_js
+          requires: 
            - build_ruby
+           - build_js
       - test_rails:
           requires:
            - build_ruby
@@ -196,10 +199,11 @@ workflows:
           context: circleci-rails-prod
       - deploy_terraform:
           requires:
-            - deploy_database_migrations
+            - hold_for_deploy
           context: circleci-rails-prod
       - heroku/deploy-via-git:
           requires:
+            - deploy_database_migrations
             - deploy_terraform
           context: circleci-rails-prod
   

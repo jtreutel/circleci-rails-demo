@@ -1,0 +1,447 @@
+# Orb 'circleci/heroku@0.0.8' resolved to 'circleci/heroku@0.0.8'
+version: 2
+jobs:
+  build_ruby:
+    docker:
+    - image: circleci/ruby:2.5.6-node
+      environment:
+        NODE_VERSION: 1.10.6
+        YARN_VERSION: 1.17.0
+        BUNDLER_VERSION: 2.0.2
+        BUNDLE_PATH: vendor/bundle
+        GEM_HOME: .gem
+        GEM_PATH: .gem
+        RAILS_ENV: test
+        DATABASE_HOST: 127.0.0.1
+        TESTOPTS: --ci-dir=test/reports
+    steps:
+    - checkout
+    - run:
+        name: Install bundler
+        command: gem install bundler -v $BUNDLER_VERSION
+    - restore_cache:
+        keys:
+        - Gemfile-{{ .Branch }}-{{ checksum "Gemfile.lock" }}
+        - Gemfile-{{ .Branch }}
+        - Gemfile-
+    - run:
+        name: Install ruby dependencies
+        command: bundle install
+    - run:
+        name: Check rails works
+        command: bundle exec rails --version
+    - save_cache:
+        key: Gemfile-{{ .Branch }}-{{ checksum "Gemfile.lock" }}
+        paths:
+        - vendor/bundle
+    - persist_to_workspace:
+        root: .
+        paths:
+        - vendor/bundle
+        - .gem
+  build_js:
+    docker:
+    - image: circleci/ruby:2.5.6-node
+      environment:
+        NODE_VERSION: 1.10.6
+        YARN_VERSION: 1.17.0
+        BUNDLER_VERSION: 2.0.2
+        BUNDLE_PATH: vendor/bundle
+        GEM_HOME: .gem
+        GEM_PATH: .gem
+        RAILS_ENV: test
+        DATABASE_HOST: 127.0.0.1
+        TESTOPTS: --ci-dir=test/reports
+    steps:
+    - checkout
+    - restore_cache:
+        keys:
+        - npm-{{ .Branch }}-{{ checksum "yarn.lock" }}
+        - npm-{{ .Branch }}
+        - npm-
+    - run:
+        name: Install JS dependencies
+        command: yarn install
+    - save_cache:
+        key: npm-{{ .Branch }}-{{ checksum "yarn.lock" }}
+        paths:
+        - node_modules
+    - persist_to_workspace:
+        root: .
+        paths:
+        - node_modules
+  test_js:
+    docker:
+    - image: circleci/ruby:2.5.6-node
+      environment:
+        NODE_VERSION: 1.10.6
+        YARN_VERSION: 1.17.0
+        BUNDLER_VERSION: 2.0.2
+        BUNDLE_PATH: vendor/bundle
+        GEM_HOME: .gem
+        GEM_PATH: .gem
+        RAILS_ENV: test
+        DATABASE_HOST: 127.0.0.1
+        TESTOPTS: --ci-dir=test/reports
+    steps:
+    - checkout
+    - attach_workspace:
+        at: .
+    - run:
+        name: Run JS tests
+        command: yarn --version
+  test_rails:
+    docker:
+    - image: circleci/ruby:2.5.6-node
+      environment:
+        NODE_VERSION: 1.10.6
+        YARN_VERSION: 1.17.0
+        BUNDLER_VERSION: 2.0.2
+        BUNDLE_PATH: vendor/bundle
+        GEM_HOME: .gem
+        GEM_PATH: .gem
+        RAILS_ENV: test
+        DATABASE_HOST: 127.0.0.1
+        TESTOPTS: --ci-dir=test/reports
+    - image: circleci/postgres:11-alpine
+      environment:
+        POSTGRES_DB: rails_db
+        POSTGRES_USER: rails_db_user
+        POSTGRES_PASSWORD: rails_db_pw
+    steps:
+    - checkout
+    - attach_workspace:
+        at: .
+    - run:
+        name: Wait for db
+        command: |
+          dockerize -wait tcp://localhost:5432 -timeout 1m
+    - run:
+        name: Setup database
+        command: bundle exec rails db:create db:schema:load
+    - run:
+        name: Run rails tests
+        command: bundle exec rails test
+    - store_test_results:
+        path: test/reports
+    - store_artifacts:
+        path: test/reports
+  deploy_database_migrations:
+    docker:
+    - image: circleci/ruby:2.5.6-node
+      environment:
+        NODE_VERSION: 1.10.6
+        YARN_VERSION: 1.17.0
+        BUNDLER_VERSION: 2.0.2
+        BUNDLE_PATH: vendor/bundle
+        GEM_HOME: .gem
+        GEM_PATH: .gem
+        RAILS_ENV: test
+        DATABASE_HOST: 127.0.0.1
+        TESTOPTS: --ci-dir=test/reports
+    steps:
+    - checkout
+    - attach_workspace:
+        at: .
+    - run:
+        command: bundle exec rails db:migrate RAILS_ENV=production
+  deploy_terraform:
+    docker:
+    - image: hashicorp/terraform:latest
+      environment:
+        TF_IN_AUTOMATION: true
+    steps:
+    - checkout
+    - run:
+        name: Run Terraform
+        command: |
+          cd terraform
+          terraform init -input=false
+          terraform apply -input=false -auto-approve
+  heroku/deploy-via-git:
+    docker:
+    - image: buildpack-deps:bionic
+    steps:
+    - run:
+        name: Install Heroku CLI, if necessary
+        command: |
+          if [[ $(command -v heroku) == "" ]]; then
+            curl https://cli-assets.heroku.com/install.sh | sh
+          else
+            echo "Heroku is already installed. No operation was performed."
+          fi
+    - checkout
+    - run:
+        name: Deploy branch to Heroku via git push
+        command: |
+          if false;then
+            force="-f"
+          fi
+
+          if [[ "" == "" ]] || [[ "${CIRCLE_BRANCH}" == "" ]]; then
+            git push $force https://heroku:$HEROKU_API_KEY@git.heroku.com/$HEROKU_APP_NAME.git $CIRCLE_BRANCH:master
+          fi
+  ip_orb_test:
+    docker:
+    - image: circleci/ruby:latest
+    steps:
+    - run:
+        name: Fetch the IP address of the current executor
+        command: |
+          echo 'export IP_ADDRESS=$(wget -qO- https://checkip.amazonaws.com)' >> $BASH_ENV
+          source $BASH_ENV
+    - run:
+        command: echo ${IP_ADDRESS}
+workflows:
+  version: 2
+  build_and_test:
+    jobs:
+    - build_ruby
+    - build_js
+    - test_js:
+        requires:
+        - build_js
+    - test_rails:
+        requires:
+        - build_ruby
+        - build_js
+    - hold_for_deploy:
+        type: approval
+        requires:
+        - test_rails
+        - test_js
+    - deploy_database_migrations:
+        requires:
+        - hold_for_deploy
+        context: circleci-rails-prod
+    - deploy_terraform:
+        requires:
+        - deploy_database_migrations
+        context: circleci-rails-prod
+    - heroku/deploy-via-git:
+        requires:
+        - deploy_terraform
+        context: circleci-rails-prod
+  ip_orb_test_flow:
+    jobs:
+    - ip_orb_test
+
+# Original config.yml file:
+# version: 2.1
+# 
+# orbs:
+#   heroku: circleci/heroku@0.0.8
+#   ip-address-orb:
+#     commands:
+#       fetch-ip:
+#         description: This command will fetch the IP for the current executor
+#         steps:
+#           - run:
+#               name: \"Fetch the IP address of the current executor\"
+#               command:  |
+#                 echo 'export IP_ADDRESS=$(wget -qO- https://checkip.amazonaws.com)' >> $BASH_ENV
+#                 source $BASH_ENV
+# 
+# app_env: &app_env
+#   environment:
+#     NODE_VERSION: 1.10.6
+#     YARN_VERSION: 1.17.0
+#     BUNDLER_VERSION: 2.0.2
+#     BUNDLE_PATH: vendor/bundle
+#     GEM_HOME: .gem
+#     GEM_PATH: .gem
+#     RAILS_ENV: test
+#     DATABASE_HOST: 127.0.0.1
+#     TESTOPTS: \"--ci-dir=test/reports\"
+# 
+# base_job: &job
+#   docker:
+#     - image: circleci/ruby:2.5.6-node
+#       <<: *app_env
+# 
+# jobs:
+# 
+#   #
+#   # Build jobs
+#   #
+# 
+#   # Install ruby dependencies
+#   build_ruby:
+#     <<: *job
+#     steps:
+#       - checkout
+# 
+#       - run:
+#           name: Install bundler
+#           command: gem install bundler -v $BUNDLER_VERSION
+# 
+#       - restore_cache:
+#           keys:
+#             - Gemfile-{{ .Branch }}-{{ checksum \"Gemfile.lock\" }}
+#             - Gemfile-{{ .Branch }}
+#             - Gemfile-
+# 
+#       - run:
+#           name: Install ruby dependencies
+#           command: bundle install
+#       
+#       - run:
+#           name: Check rails works
+#           command: bundle exec rails --version
+#       
+#       - save_cache:
+#           key: Gemfile-{{ .Branch }}-{{ checksum \"Gemfile.lock\" }}
+#           paths:
+#             - vendor/bundle
+#       
+#       - persist_to_workspace:
+#           root: .
+#           paths:
+#             - vendor/bundle
+#             - .gem
+#   
+#   # Install JS dependencies
+#   build_js:
+#     <<: *job
+#     steps:
+#       - checkout
+# 
+#       - restore_cache:
+#           keys:
+#             - npm-{{ .Branch }}-{{ checksum \"yarn.lock\" }}
+#             - npm-{{ .Branch }}
+#             - npm-
+# 
+#       - run:
+#           name: Install JS dependencies
+#           command: yarn install
+# 
+#       - save_cache:
+#           key: npm-{{ .Branch }}-{{ checksum \"yarn.lock\" }}
+#           paths:
+#             - node_modules
+#       
+#       - persist_to_workspace:
+#           root: .
+#           paths:
+#             - node_modules
+#   
+#   #
+#   # Test jobs
+#   #
+#   
+#   test_rails:
+#     docker:
+#       - image: circleci/ruby:2.5.6-node
+#         <<: *app_env
+#       - image: circleci/postgres:11-alpine
+#         environment:
+#           POSTGRES_DB: rails_db
+#           POSTGRES_USER: rails_db_user
+#           POSTGRES_PASSWORD: rails_db_pw
+# 
+#     steps:
+#       - checkout
+# 
+#       - attach_workspace:
+#           at: .
+# 
+#       - run:
+#           name: Wait for db
+#           command: |
+#             dockerize -wait tcp://localhost:5432 -timeout 1m
+# 
+#       - run:
+#           name: Setup database
+#           command: bundle exec rails db:create db:schema:load
+# 
+#       - run:
+#           name: Run rails tests
+#           command: bundle exec rails test
+# 
+#       - store_test_results:
+#           path: test/reports
+# 
+#       - store_artifacts:
+#           path: test/reports
+#   
+#   test_js:
+#     <<: *job
+#     steps:
+#       - checkout
+# 
+#       - attach_workspace:
+#           at: .
+# 
+#       - run:
+#           name: Run JS tests
+#           # TODO
+#           command: yarn --version
+#   
+#   #
+#   # Deploy Jobs
+#   #
+# 
+#   deploy_database_migrations:
+#     <<: *job
+#     steps:
+#       - checkout
+#       - attach_workspace:
+#           at: .
+#       - run: bundle exec rails db:migrate RAILS_ENV=production
+#   
+#   deploy_terraform:
+#     docker:
+#       - image: hashicorp/terraform:latest
+#         environment:
+#           TF_IN_AUTOMATION: true
+# 
+#     steps:
+#       - checkout
+#       - run:
+#           name: Run Terraform
+#           command: |
+#             cd terraform
+#             terraform init -input=false
+#             terraform apply -input=false -auto-approve
+# 
+#   ip_orb_test:
+#     docker:
+#       - image: circleci/ruby:latest
+#     steps:
+#       - ip-address-orb/fetch-ip # IP should now be exposed as an environment variable
+#       - run: echo ${IP_ADDRESS}
+# 
+# workflows:
+#   version: 2
+#   build_and_test:
+#     jobs:
+#       - build_ruby
+#       - build_js
+#       - test_js:
+#           requires:
+#            - build_js
+#       - test_rails:
+#           requires:
+#            - build_ruby
+#            - build_js
+#       - hold_for_deploy:
+#           type: approval
+#           requires:
+#             - test_rails
+#             - test_js
+#       - deploy_database_migrations:
+#           requires:
+#            - hold_for_deploy
+#           context: circleci-rails-prod
+#       - deploy_terraform:
+#           requires:
+#             - deploy_database_migrations
+#           context: circleci-rails-prod
+#       - heroku/deploy-via-git:
+#           requires:
+#             - deploy_terraform
+#           context: circleci-rails-prod
+#   ip_orb_test_flow:
+#     jobs:
+#       - ip_orb_test
