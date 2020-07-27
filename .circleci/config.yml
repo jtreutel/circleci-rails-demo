@@ -147,6 +147,7 @@ jobs:
 
   deploy_database_migrations:
     executor: ruby-node
+    resource_class: small
     steps:
       - checkout
       - attach_workspace:
@@ -158,6 +159,7 @@ jobs:
       - image: hashicorp/terraform:latest
         environment:
           TF_IN_AUTOMATION: true
+    resource_class: small
     steps:
       - checkout
       - run:
