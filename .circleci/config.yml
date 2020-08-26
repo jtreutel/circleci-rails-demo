@@ -156,7 +156,7 @@ jobs:
   
   deploy_terraform:
     docker:
-      - image: hashicorp/terraform:latest
+      - image: hashicorp/terraform:12
         environment:
           TF_IN_AUTOMATION: true
     resource_class: small
