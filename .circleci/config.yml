@@ -41,7 +41,7 @@ jobs:
           name: Install bundler-audit 0.7
           command: sudo gem install bundler-audit -v 0.7
       - run:
-          name: Run bundler-update
+          name: Run bundle-audit
           command: sudo bundle-audit check --update
 
   #
