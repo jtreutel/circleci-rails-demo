@@ -32,6 +32,18 @@ executors:
 
 jobs:
 
+  bundle_audit:
+    executor: ruby-node
+    resource_class: small
+    steps:
+      - checkout
+      - run:
+          name: Install bundler-audit 0.7
+          command: sudo gem install bundler-audit -v 0.7
+      - run:
+          name: Run bundler-update
+          command: sudo bundle-audit check --update
+
   #
   # Build jobs
   #
@@ -181,6 +193,7 @@ jobs:
 workflows:
   build_and_test:
     jobs:
+      - bundle_audit
       - build_ruby
       - build_js
       - test_js:
@@ -194,6 +207,7 @@ workflows:
       - hold_for_deploy:
           type: approval
           requires:
+            - bundle_audit
             - test_rails
             - test_js
           filters:
@@ -212,4 +226,12 @@ workflows:
             - deploy_database_migrations
             - deploy_terraform
           context: circleci-rails-prod
-  
+  nightly_security_scan:
+    jobs:
+      - bundle_audit
+    triggers:
+      - schedule:
+          cron: "0 0 * * *"
+          filters:
+            branches: 
+              only: master
