@@ -43,6 +43,11 @@ bundle() {
     docker-compose run --rm rails bundle "$@"
 }
 
+# Run the bundle_audit ci job locally
+bundle_audit() {
+    circleci local execute --job bundle_audit
+}
+
 # Shortcut to access `node`
 # 
 # Usage example `./app.sh node --version`
