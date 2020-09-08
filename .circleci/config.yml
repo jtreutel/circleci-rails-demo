@@ -32,7 +32,8 @@ executors:
 
 jobs:
 
-  bundle_audit:
+  # Scan for vulnerabilities in ruby dependencies using bundler_audit
+  ruby_dependency_scan:
     executor: ruby-node
     resource_class: small
     steps:
@@ -193,7 +194,7 @@ jobs:
 workflows:
   build_and_test:
     jobs:
-      - bundle_audit
+      - ruby_dependency_scan
       - build_ruby
       - build_js
       - test_js:
@@ -207,7 +208,7 @@ workflows:
       - hold_for_deploy:
           type: approval
           requires:
-            - bundle_audit
+            - ruby_dependency_scan
             - test_rails
             - test_js
           filters:
@@ -228,7 +229,7 @@ workflows:
           context: circleci-rails-prod
   nightly_security_scan:
     jobs:
-      - bundle_audit
+      - ruby_dependency_scan
     triggers:
       - schedule:
           cron: "0 0 * * *"
