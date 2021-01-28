@@ -217,16 +217,16 @@ workflows:
       - deploy_database_migrations:
           requires:
            - hold_for_deploy
-          context: circleci-rails-prod
+          context: jennings-rails-demo
       - deploy_terraform:
           requires:
             - hold_for_deploy
-          context: circleci-rails-prod
+          context: jennings-rails-demo
       - heroku/deploy-via-git:
           requires:
             - deploy_database_migrations
             - deploy_terraform
-          context: circleci-rails-prod
+          context: jennings-rails-demo
   nightly_security_scan:
     jobs:
       - ruby_dependency_scan
