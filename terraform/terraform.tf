@@ -1,6 +1,6 @@
 resource "heroku_app" "rails_app" {
     name   = "rails-circle-demo"
-    region = "tokyo" #might need to change to "us"
+    region = "us"
 
     buildpacks = [
         "heroku/nodejs",
